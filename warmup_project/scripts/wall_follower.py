@@ -7,7 +7,6 @@ import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Pose, Point, Vector3
 
-
 class FollowWall:
   def __init__(self):
     self.twist = Twist()
@@ -18,7 +17,6 @@ class FollowWall:
     self.previous_aft = 0
     self.pls_stop = 1
     self.current_marker_id = 0
-    # self.wall_marker = self.create_marker()
     self.fore_x = self.fore*(2**(-.5))
     self.fore_y = -1*self.fore*(2**(-.5))
     self.aft_x = -1*self.aft*(2**(-.5))
@@ -28,8 +26,6 @@ class FollowWall:
     self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
     self.marker_pub = rospy.Publisher('/visualization_messages/Marker', Marker, queue_size=10)
     self.sub = rospy.Subscriber('/stable_scan', LaserScan, self.process_scan)
-
-    self.do_the_thing()
 
   def process_scan(self, msg):
     fore_deg = 315
@@ -44,11 +40,6 @@ class FollowWall:
     self.fore_y = -1*self.fore*(2**(-.5))
     self.aft_x = -1*self.aft*(2**(-.5))
     self.aft_y = -1*self.aft*(2**(-.5))
-    # x = (fore_x - aft_x)/2
-    # y = (fore_y - aft_y)/2
-    # self.wall_marker = self.create_marker(x,y)
-    # self.marker_pub.publish(self.create_marker(fore_x, fore_y))
-    # self.marker_pub.publish(self.create_marker(aft_x, aft_y))
 
   def create_marker(self, x=0, y=0):
     scale = Vector3(x=.1, y=.1, z=.1)
@@ -69,43 +60,30 @@ class FollowWall:
     self.twist.angular.x = 0; self.twist.angular.y = 0; self.twist.angular.z = spin
 
   def do_the_thing(self):
-    # r = rospy.Rate(100)
+    wall_dist_sum = 2.6
+    dist_sum = self.fore + self.aft
+    previous_dist_sum = self.previous_fore + self.previous_aft
+    spin_factor = 1.2
 
-    while not rospy.is_shutdown():
-      
-      wall_dist_sum = 2.6
-      dist_sum = self.fore + self.aft
-      previous_dist_sum = self.previous_fore + self.previous_aft
-      spin_factor = 1.2
+    self.set_vals(speed=1, spin=spin_factor*(wall_dist_sum - dist_sum))
 
-      print '---------------'
-      print self.pls_stop
-      print self.fore
-      print self.aft
+    if self.aft and not self.fore:
+      self.set_vals(speed=1, spin=-1*spin_factor*(wall_dist_sum - dist_sum))
+    elif not (self.fore or self.aft):
+      self.set_vals(speed=1, spin=spin_factor*(wall_dist_sum - previous_dist_sum))
+      if not (self.previous_fore or self.previous_aft):
+        self.set_vals(speed=.1)
 
-      self.set_vals(speed=1, spin=spin_factor*(wall_dist_sum - dist_sum))
+    if (self.pls_stop < 1) and (self.pls_stop != 0):
+      self.set_vals(spin=.5)
+    elif (self.twist.linear.x > .2) and self.fore and self.aft:
+      self.marker_pub.publish(self.create_marker(self.fore_x, self.fore_y))
+      self.marker_pub.publish(self.create_marker(self.aft_x, self.aft_y))
 
-      if self.aft and not self.fore:
-        self.set_vals(speed=1, spin=-1*spin_factor*(wall_dist_sum - dist_sum))
-      elif not (self.fore or self.aft):
-        self.set_vals(speed=1, spin=spin_factor*(wall_dist_sum - previous_dist_sum))
-        if not (self.previous_fore or self.previous_aft):
-          self.set_vals(speed=.1)
-
-
-      print "stopping?"
-      if (self.pls_stop < 1) and (self.pls_stop != 0):
-        print "STOPPING"
-        self.set_vals(spin=.5)
-      elif (self.twist.linear.x > .2) and self.fore and self.aft:
-        # self.marker_pub.publish(self.wall_marker)
-        self.marker_pub.publish(self.create_marker(self.fore_x, self.fore_y))
-        self.marker_pub.publish(self.create_marker(self.aft_x, self.aft_y))
-
-      print self.twist.linear.x
-      self.pub.publish(self.twist)
-
-      # r.sleep()
+    print self.twist.linear.x
+    self.pub.publish(self.twist)
 
 if __name__ == "__main__":
-  FollowWall()
+  fw = FollowWall()
+  while not rospy.is_shutdown():
+    fw.do_the_thing()
