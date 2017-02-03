@@ -3,6 +3,7 @@
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Header
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import LaserScan
 import rospy
 import tf
 from tf.transformations import euler_from_quaternion
@@ -21,6 +22,7 @@ class ObstacleAvoider:
     self.rot_error = 0
     self.avoid_dist = 1
     self.ranges = [0]*360
+    self.wf = FollowWall()
 
     rospy.init_node('avoid_instructions')
     self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
@@ -69,13 +71,12 @@ class ObstacleAvoider:
     
     self.running_total = 0
     self.go_forward()
-    wf = FollowWall()
     if direction > 0:
       side = 270
     elif direction < 0:
       side = 90
     while self.ranges[side] < self.avoid_dist:
-      wf.do_the_thing()
+      self.wf.do_the_thing()
     while abs(self.rot) > self.rot_error/2:
       self.set_vals(spin=-.1*direction)
     self.go_forward()
@@ -89,7 +90,7 @@ class ObstacleAvoider:
     self.go_forward()
 
     cone_ranges = self.ranges[-30:] + self.ranges[:30]
-    in_range_num = len([x for x < 1 in cone_ranges])
+    in_range_num = len([x for x in cone_ranges if x < 1])
     if (in_range_num > 0) and (cone_ranges[0] == 0):
       self.make_a_turn(1)
     elif (in_range_num > 0) and (cone_ranges[-1] == 0):
