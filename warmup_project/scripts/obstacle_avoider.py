@@ -52,6 +52,7 @@ class ObstacleAvoider:
   def set_vals(self, speed=0, spin=0):
     self.twist.linear.x = speed; self.twist.linear.y = 0; self.twist.linear.z = 0
     self.twist.angular.x = 0; self.twist.angular.y = 0; self.twist.angular.z = spin
+    self.pub.publish(self.twist)
 
   def go_forward(self):
     self.set_vals(speed=1)
@@ -63,9 +64,9 @@ class ObstacleAvoider:
     self.set_vals(spin=.1)
 
   def make_a_turn(self, direction):
-    self.set_vals(spin=.1*direction)
     while self.running_total < (pi/2 - self.rot_error/2):
-      pass
+      self.set_vals(spin=.1*direction)
+    
     self.running_total = 0
     self.go_forward()
     wf = FollowWall()
@@ -75,7 +76,9 @@ class ObstacleAvoider:
       side = 90
     while self.ranges[side] < self.avoid_dist:
       wf.do_the_thing()
-    ### Implement returning to forward
+    while abs(self.rot) > self.rot_error/2:
+      self.set_vals(spin=-.1*direction)
+    self.go_forward()
 
   def convert_pose_to_xy_and_theta(self, pose):
       orientation_tuple = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
