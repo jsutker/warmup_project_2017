@@ -6,6 +6,7 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import Header
 from neato_node.msg import Bump
 import rospy
+import random
 
 class FiniteStateController:
   def __init__(self):
@@ -32,7 +33,9 @@ class FiniteStateController:
       self.set_vals()
     else:
       # freak out
-      self.set_vals(speed=.5, spin=.5)
+      speed = 2*(random.random()) - 1
+      spin = 2*(random.random()) - 1
+      self.set_vals(speed=speed, spin=spin)
     self.pub.publish(self.twist)
 
 if __name__ == "__main__":
