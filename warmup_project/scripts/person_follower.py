@@ -24,8 +24,6 @@ class PersonFollower:
     self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
     self.twist = Twist()
 
-    self.do_the_thing()
-
     print "Node is finished!"
 
   def process_scan(self, msg):
@@ -75,14 +73,17 @@ class PersonFollower:
 
   def do_the_thing(self):
     r = rospy.Rate(2)
-    while not rospy.is_shutdown():
-      if self.current_state == "wait":
-        self.wait()
-      elif self.current_state == "follow":
-        self.follow()
+    if self.current_state == "wait":
+      self.wait()
+    elif self.current_state == "follow":
+      self.follow()
 
-      self.pub.publish(self.twist)
+    self.pub.publish(self.twist)
 
-      r.sleep()
+    r.sleep()
 
-pfollow = PersonFollower()
+
+if __name__ == "__main__":
+  pfollow = PersonFollower()
+  while not rospy.is_shutdown():
+    pfollow.do_the_thing()
