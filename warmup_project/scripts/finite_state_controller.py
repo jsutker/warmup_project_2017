@@ -42,7 +42,7 @@ class FiniteDanceController:
   def do_the_thing(self):
     r = rospy.Rate(10)
     if self.dancing:
-      # print("Dancing!")
+      print("Dancing!")
       self.dance()
     else:
       print("Not dancing :(")
