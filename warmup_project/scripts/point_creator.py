@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-""" Creates point """
+""" Creates point at the specified location relative to the robot. Program is a demonstration of
+ability to place markers for use in Rviz."""
 
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker

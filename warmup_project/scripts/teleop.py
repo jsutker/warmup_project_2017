@@ -8,6 +8,8 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import Header
 import rospy
 
+"""Basic robot control program that allows users to turn left or right and move forward or backward
+via: w-Forward, s-Backward, a-Rotate Left, d-Rotate Right"""
 #initialize node and begin publishing to /cmd_vel to cause movement
 rospy.init_node('better_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
