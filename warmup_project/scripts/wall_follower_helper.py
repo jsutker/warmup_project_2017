@@ -9,8 +9,12 @@ from geometry_msgs.msg import Pose, Point, Vector3
 
 class FollowWall:
   def __init__(self):
+    """Wall following code that uses particular angles of the laser scanner to determine relative distance
+    and angle to the wall or any other relatively linear obstruction. 
+    Class publishes to cmd_vel and Marker and subscribes to stable_scan"""
+    
+    #instantiate instance variables
     self.twist = Twist()
-
     self.fore = 0
     self.aft = 0
     self.previous_fore = 0
@@ -22,12 +26,15 @@ class FollowWall:
     self.aft_x = -1*self.aft*(2**(-.5))
     self.aft_y = -1*self.aft*(2**(-.5))
 
-    # rospy.init_node('wall_follower')
+    #Publishing and subscribing
     self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
     self.marker_pub = rospy.Publisher('/visualization_messages/Marker', Marker, queue_size=10)
     self.sub = rospy.Subscriber('/stable_scan', LaserScan, self.process_scan)
 
   def process_scan(self, msg):
+    """
+    Takes in information from the laser scanner and processes it into a usable format. 
+    """
     fore_deg = 315
     aft_deg = 225
     self.previous_fore = self.fore
@@ -42,6 +49,9 @@ class FollowWall:
     self.aft_y = -1*self.aft*(2**(-.5))
 
   def create_marker(self, x=0, y=0):
+    """Calculates position for the marker to be placed based off position of the robot and increments marker id
+    to avoid overlap.
+    """
     scale = Vector3(x=.1, y=.1, z=.1)
     pt = Point(x=x, y=y)
     pose = Pose(position=pt)
@@ -56,10 +66,15 @@ class FollowWall:
     return mark
 
   def set_vals(self, speed=0, spin=0):
+    """Helper function designed to take in a speed and angular velocity and set the appropriate values
+    in the twist for later publishing."""
     self.twist.linear.x = speed; self.twist.linear.y = 0; self.twist.linear.z = 0
     self.twist.angular.x = 0; self.twist.angular.y = 0; self.twist.angular.z = spin
 
   def do_the_thing(self):
+    """Main function that instantiates the distance from the wall the robot should maintain, coordinates
+    the course correction of the robot via set_vals, sets default behavior when there is no wall to follow,
+    and publishes all necessary information."""
     print("wall following")
     wall_dist_sum = 2.6
     dist_sum = self.fore + self.aft
@@ -68,6 +83,8 @@ class FollowWall:
 
     self.set_vals(speed=1, spin=spin_factor*(wall_dist_sum - dist_sum))
 
+    #course correction depending on whether readings are being received and whether they're in the
+    #appropriate range
     if self.aft and not self.fore:
       self.set_vals(speed=1, spin=-1*spin_factor*(wall_dist_sum - dist_sum))
     elif not (self.fore or self.aft):
